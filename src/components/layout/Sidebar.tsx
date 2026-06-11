@@ -14,6 +14,7 @@ import {
   MapPin,
   LogOut,
   Building2,
+  Truck,
 } from "lucide-react";
 
 type NavItem = {
@@ -40,6 +41,12 @@ const navItems: NavItem[] = [
     href: "/commandes",
     label: "Commandes",
     icon: ShoppingCart,
+    roles: ["AGENT_CLIENT", "N1_CLIENT", "AGENT_COMMERCIAL", "SERVICE_ACHAT", "SUPER_ADMIN"],
+  },
+  {
+    href: "/vehicules",
+    label: "Historique véhicules",
+    icon: Truck,
     roles: ["AGENT_CLIENT", "N1_CLIENT", "AGENT_COMMERCIAL", "SERVICE_ACHAT", "SUPER_ADMIN"],
   },
   {
