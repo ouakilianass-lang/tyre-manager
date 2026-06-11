@@ -12,8 +12,9 @@ const STEPS: { statut: StatutCommande; label: string }[] = [
   { statut: "DEMANDE_INSPECTION",    label: "Demande" },
   { statut: "INSPECTION_EN_COURS",   label: "Inspection" },
   { statut: "INSPECTION_ENVOYEE",    label: "Fiche envoyée" },
-  { statut: "DEVIS_DEMANDE",         label: "Devis demandé" },
-  { statut: "DEVIS_PROPOSE",         label: "Devis proposé" },
+  { statut: "DEVIS_DEMANDE",         label: "Besoins saisis" },
+  { statut: "DEVIS_EN_COURS",        label: "Devis en cours" },
+  { statut: "DEVIS_PROPOSE",         label: "Choix client" },
   { statut: "VALIDEE",               label: "Validée" },
   { statut: "COMMANDEE_FOURNISSEUR", label: "Commandée" },
   { statut: "PNEUS_LIVRES",          label: "Livrée" },
@@ -25,8 +26,8 @@ const ORDER: StatutCommande[] = [
   "INSPECTION_EN_COURS",
   "INSPECTION_ENVOYEE",
   "DEVIS_DEMANDE",
+  "DEVIS_EN_COURS",
   "DEVIS_PROPOSE",
-  "EN_ATTENTE_VALIDATION",
   "VALIDEE",
   "COMMANDEE_FOURNISSEUR",
   "PNEUS_LIVRES",
@@ -188,9 +189,15 @@ export default async function CommandeDetailPage({ params }: { params: Promise<{
                 </span>
               </div>
             )}
+            {commande.marqueDemandee && (
+              <div className="pt-1 border-t">
+                <p className="text-xs text-gray-400 mb-1">Demande client</p>
+                <p className="text-sm font-medium">{commande.quantiteDemandee}x {commande.marqueDemandee} — {commande.dimensionDemandee}</p>
+              </div>
+            )}
             {commande.prixTotal !== null && (
               <div className="flex justify-between font-semibold pt-1 border-t">
-                <span className="text-gray-500">Total HT</span>
+                <span className="text-gray-500">Total HT (choix)</span>
                 <span>{commande.prixTotal.toLocaleString("fr-FR")} MAD</span>
               </div>
             )}
@@ -276,6 +283,9 @@ export default async function CommandeDetailPage({ params }: { params: Promise<{
           siteMontageId: commande.siteMontageId,
           inspectionValideeAgent: commande.inspectionValideeAgent,
           inspectionValideeN1: commande.inspectionValideeN1,
+          marqueDemandee: commande.marqueDemandee,
+          dimensionDemandee: commande.dimensionDemandee,
+          quantiteDemandee: commande.quantiteDemandee,
         }}
         role={session.user.role}
         sites={sitesForForm}

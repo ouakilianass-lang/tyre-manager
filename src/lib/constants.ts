@@ -12,15 +12,16 @@ export const STATUT_LABELS: Record<StatutCommande, string> = {
   DEMANDE_INSPECTION:    "Demande d'inspection",
   INSPECTION_EN_COURS:   "Inspection en cours",
   INSPECTION_ENVOYEE:    "Fiche inspection envoyée",
-  DEVIS_DEMANDE:         "Devis demandé",
+  DEVIS_DEMANDE:         "Besoins saisis",
+  DEVIS_EN_COURS:        "Devis en cours",
   DEVIS_PROPOSE:         "Devis proposé",
-  EN_ATTENTE_VALIDATION: "En attente validation prix",
   VALIDEE:               "Validée",
   COMMANDEE_FOURNISSEUR: "Commandée fournisseur",
   PNEUS_LIVRES:          "Pneus livrés",
   MONTEE:                "Montée",
   REJETEE:               "Rejetée",
   INSPECTION_TERMINEE:   "Inspection terminée",
+  EN_ATTENTE_VALIDATION: "En attente validation",
 };
 
 export const STATUT_COLORS: Record<StatutCommande, string> = {
@@ -28,14 +29,15 @@ export const STATUT_COLORS: Record<StatutCommande, string> = {
   INSPECTION_EN_COURS:   "bg-blue-100 text-blue-700",
   INSPECTION_ENVOYEE:    "bg-cyan-100 text-cyan-700",
   DEVIS_DEMANDE:         "bg-indigo-100 text-indigo-700",
-  DEVIS_PROPOSE:         "bg-violet-100 text-violet-700",
-  EN_ATTENTE_VALIDATION: "bg-yellow-100 text-yellow-700",
+  DEVIS_EN_COURS:        "bg-violet-100 text-violet-700",
+  DEVIS_PROPOSE:         "bg-amber-100 text-amber-700",
   VALIDEE:               "bg-green-100 text-green-700",
   COMMANDEE_FOURNISSEUR: "bg-purple-100 text-purple-700",
   PNEUS_LIVRES:          "bg-orange-100 text-orange-700",
   MONTEE:                "bg-emerald-100 text-emerald-700",
   REJETEE:               "bg-red-100 text-red-700",
   INSPECTION_TERMINEE:   "bg-teal-100 text-teal-700",
+  EN_ATTENTE_VALIDATION: "bg-yellow-100 text-yellow-700",
 };
 
 export const TYPE_VEHICULE_LABELS = {

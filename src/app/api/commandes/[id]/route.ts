@@ -6,26 +6,16 @@ import { StatutCommande } from "@prisma/client";
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
-
   const { id } = await params;
-
   const commande = await prisma.commande.findUnique({
     where: { id },
     include: {
-      entreprise: true,
-      createur: true,
-      validateur: true,
-      agentCommercial: true,
-      serviceAchat: true,
-      siteMontage: true,
+      entreprise: true, createur: true, validateur: true,
+      agentCommercial: true, serviceAchat: true, siteMontage: true,
       pneus: true,
-      historiques: {
-        orderBy: { createdAt: "asc" },
-        include: { utilisateur: true },
-      },
+      historiques: { orderBy: { createdAt: "asc" }, include: { utilisateur: true } },
     },
   });
-
   if (!commande) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
   return NextResponse.json(commande);
 }
@@ -45,144 +35,149 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   let newStatut: StatutCommande | null = null;
   let commentaire = "";
 
-  // ── 1. AGENT COMMERCIAL : Prendre en charge ────────────────────────────────
+  // ── 1. Commercial : Prendre en charge ─────────────────────────────────────
   if (role === "AGENT_COMMERCIAL" && body.action === "prendre_en_charge") {
     updateData = { statut: "INSPECTION_EN_COURS", agentCommercialId: session.user.id };
     newStatut = "INSPECTION_EN_COURS";
     commentaire = "Inspection prise en charge par l'agent commercial";
   }
 
-  // ── 2. AGENT COMMERCIAL : Envoyer la fiche d'inspection par mail ───────────
+  // ── 2. Commercial : Envoyer fiche d'inspection par mail ────────────────────
   if (role === "AGENT_COMMERCIAL" && body.action === "envoyer_inspection") {
-    const { notesInspection } = body;
     updateData = {
       statut: "INSPECTION_ENVOYEE",
       dateInspection: new Date(),
-      notesInspection: notesInspection || null,
+      notesInspection: body.notesInspection || null,
     };
     newStatut = "INSPECTION_ENVOYEE";
     commentaire = "Fiche d'inspection envoyée par mail au client";
   }
 
-  // ── 3a. AGENT CLIENT : Valider l'inspection ────────────────────────────────
+  // ── 3a. Agent client : Valider l'inspection ────────────────────────────────
   if (role === "AGENT_CLIENT" && body.action === "valider_inspection") {
-    if (commande.statut !== "INSPECTION_ENVOYEE") {
+    if (commande.statut !== "INSPECTION_ENVOYEE")
       return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
-    }
-    const dejaValideN1 = commande.inspectionValideeN1;
+    const bothDone = commande.inspectionValideeN1;
     updateData = {
       inspectionValideeAgent: true,
-      ...(dejaValideN1 && { statut: "DEVIS_DEMANDE" }),
+      ...(bothDone && { statut: "DEVIS_DEMANDE" }),
     };
-    newStatut = dejaValideN1 ? "DEVIS_DEMANDE" : "INSPECTION_ENVOYEE";
-    commentaire = dejaValideN1
-      ? "Inspection validée par l'agent client — devis demandé"
+    newStatut = bothDone ? "DEVIS_DEMANDE" : "INSPECTION_ENVOYEE";
+    commentaire = bothDone
+      ? "Les deux validations reçues — agent client peut saisir ses besoins"
       : "Inspection validée par l'agent client (en attente N+1)";
   }
 
   // ── 3b. N+1 : Valider l'inspection ────────────────────────────────────────
   if (role === "N1_CLIENT" && body.action === "valider_inspection") {
-    if (commande.statut !== "INSPECTION_ENVOYEE") {
+    if (commande.statut !== "INSPECTION_ENVOYEE")
       return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
-    }
-    const dejaValideAgent = commande.inspectionValideeAgent;
+    const bothDone = commande.inspectionValideeAgent;
     updateData = {
       inspectionValideeN1: true,
-      ...(dejaValideAgent && { statut: "DEVIS_DEMANDE" }),
+      ...(bothDone && { statut: "DEVIS_DEMANDE" }),
     };
-    newStatut = dejaValideAgent ? "DEVIS_DEMANDE" : "INSPECTION_ENVOYEE";
-    commentaire = dejaValideAgent
-      ? "Inspection validée par le responsable — devis demandé"
+    newStatut = bothDone ? "DEVIS_DEMANDE" : "INSPECTION_ENVOYEE";
+    commentaire = bothDone
+      ? "Les deux validations reçues — agent client peut saisir ses besoins"
       : "Inspection validée par le responsable (en attente agent client)";
   }
 
-  // ── 4. AGENT COMMERCIAL : Proposer le devis (marques + prix HT) ───────────
-  if (role === "AGENT_COMMERCIAL" && body.action === "proposer_devis") {
-    if (commande.statut !== "DEVIS_DEMANDE") {
+  // ── 4. Agent client : Saisir marque + quantité souhaitées ──────────────────
+  if (role === "AGENT_CLIENT" && body.action === "saisir_besoins") {
+    if (commande.statut !== "DEVIS_DEMANDE")
       return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
-    }
+    const { marqueDemandee, dimensionDemandee, quantiteDemandee, notesDevis } = body;
+    updateData = {
+      statut: "DEVIS_EN_COURS",
+      marqueDemandee,
+      dimensionDemandee,
+      quantiteDemandee: parseInt(quantiteDemandee) || 1,
+      notesDevis: notesDevis || null,
+    };
+    newStatut = "DEVIS_EN_COURS";
+    commentaire = `Besoins saisis : ${quantiteDemandee}x ${marqueDemandee} ${dimensionDemandee}`;
+  }
+
+  // ── 5. Commercial : Proposer les marques dispo + prix HT ──────────────────
+  if (role === "AGENT_COMMERCIAL" && body.action === "proposer_devis") {
+    if (commande.statut !== "DEVIS_EN_COURS")
+      return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
     const { pneus, siteMontageId } = body;
 
     await prisma.pneu.deleteMany({ where: { commandeId: id } });
-    if (pneus && pneus.length > 0) {
+    if (pneus?.length > 0) {
       await prisma.pneu.createMany({
-        data: pneus.map((p: any) => ({ ...p, commandeId: id })),
+        data: pneus.map((p: any) => ({ ...p, choisi: false, commandeId: id })),
       });
     }
-    const total = pneus?.reduce((s: number, p: any) => s + p.prixUnitaire * p.quantite, 0) ?? 0;
 
-    updateData = {
-      statut: "DEVIS_PROPOSE",
-      prixTotal: total,
-      siteMontageId: siteMontageId || null,
-    };
+    updateData = { statut: "DEVIS_PROPOSE", siteMontageId: siteMontageId || null };
     newStatut = "DEVIS_PROPOSE";
-    commentaire = `Devis proposé : ${total.toLocaleString("fr-FR")} MAD HT`;
+    commentaire = `${pneus?.length ?? 0} proposition(s) envoyée(s) au client`;
   }
 
-  // ── 5. N+1 : Valider le prix / devis ──────────────────────────────────────
-  if (role === "N1_CLIENT" && body.action === "valider_prix") {
-    if (commande.statut !== "DEVIS_PROPOSE") {
+  // ── 6. Agent client : Choisir une proposition ─────────────────────────────
+  if (role === "AGENT_CLIENT" && body.action === "choisir_pneu") {
+    if (commande.statut !== "DEVIS_PROPOSE")
       return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
-    }
+    const { pneuId } = body;
+
+    // Décocher tous, cocher le choisi
+    await prisma.pneu.updateMany({ where: { commandeId: id }, data: { choisi: false } });
+    const pneuChoisi = await prisma.pneu.update({
+      where: { id: pneuId },
+      data: { choisi: true },
+    });
+
     updateData = {
       statut: "VALIDEE",
+      prixTotal: pneuChoisi.prixUnitaire * pneuChoisi.quantite,
       validePrix: true,
       validateurId: session.user.id,
     };
     newStatut = "VALIDEE";
-    commentaire = "Prix validé par le responsable client — commande approuvée";
+    commentaire = `Choix confirmé : ${pneuChoisi.marque} ${pneuChoisi.dimension} — ${(pneuChoisi.prixUnitaire * pneuChoisi.quantite).toLocaleString("fr-FR")} MAD HT`;
   }
 
-  // ── 5b. N+1 : Rejeter ─────────────────────────────────────────────────────
-  if (role === "N1_CLIENT" && body.action === "rejeter") {
-    updateData = { statut: "REJETEE", validateurId: session.user.id };
-    newStatut = "REJETEE";
-    commentaire = body.commentaire || "Rejetée par le responsable client";
-  }
-
-  // ── 6. SERVICE ACHAT : Passer la commande ─────────────────────────────────
+  // ── 7. Service achat : Passer la commande ─────────────────────────────────
   if (role === "SERVICE_ACHAT" && body.action === "commander") {
-    if (commande.statut !== "VALIDEE") {
+    if (commande.statut !== "VALIDEE")
       return NextResponse.json({ error: "La commande doit être validée d'abord" }, { status: 400 });
-    }
     updateData = { statut: "COMMANDEE_FOURNISSEUR", serviceAchatId: session.user.id };
     newStatut = "COMMANDEE_FOURNISSEUR";
     commentaire = "Commande passée auprès du fournisseur";
   }
 
-  // ── 7. AGENT COMMERCIAL : Pneus livrés ────────────────────────────────────
+  // ── 8. Commercial : Pneus livrés ──────────────────────────────────────────
   if (role === "AGENT_COMMERCIAL" && body.action === "livrer") {
     updateData = { statut: "PNEUS_LIVRES", dateLivraison: new Date() };
     newStatut = "PNEUS_LIVRES";
     commentaire = "Pneus arrivés au point de montage";
   }
 
-  // ── 8. AGENT COMMERCIAL : Montage effectué ────────────────────────────────
+  // ── 9. Commercial : Montage effectué ──────────────────────────────────────
   if (role === "AGENT_COMMERCIAL" && body.action === "monter") {
-    updateData = {
-      statut: "MONTEE",
-      dateMontage: new Date(),
-      notesMontage: body.notes || null,
-    };
+    updateData = { statut: "MONTEE", dateMontage: new Date(), notesMontage: body.notes || null };
     newStatut = "MONTEE";
     commentaire = "Montage effectué";
   }
 
-  if (Object.keys(updateData).length === 0) {
-    return NextResponse.json({ error: "Action non reconnue" }, { status: 400 });
+  // ── Rejet (N+1 à n'importe quelle étape de validation) ────────────────────
+  if (role === "N1_CLIENT" && body.action === "rejeter") {
+    updateData = { statut: "REJETEE", validateurId: session.user.id };
+    newStatut = "REJETEE";
+    commentaire = body.commentaire || "Rejetée par le responsable";
   }
+
+  if (Object.keys(updateData).length === 0)
+    return NextResponse.json({ error: "Action non reconnue" }, { status: 400 });
 
   const updated = await prisma.commande.update({ where: { id }, data: updateData });
 
   if (newStatut) {
     await prisma.historique.create({
-      data: {
-        commandeId: id,
-        statut: newStatut,
-        commentaire,
-        utilisateurId: session.user.id,
-      },
+      data: { commandeId: id, statut: newStatut, commentaire, utilisateurId: session.user.id },
     });
   }
 

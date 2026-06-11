@@ -26,15 +26,16 @@ enum StatutCommande {
   DEMANDE_INSPECTION        // 1. Agent client crée la demande
   INSPECTION_EN_COURS       // 2. Agent commercial prend en charge
   INSPECTION_ENVOYEE        // 3. Agent commercial envoie la fiche par mail
-  DEVIS_DEMANDE             // 4. Agent client + N+1 ont validé → agent client demande les prix
-  DEVIS_PROPOSE             // 5. Agent commercial propose marques dispo + prix HT
-  EN_ATTENTE_VALIDATION     // 6. N+1 valide le prix
-  VALIDEE                   // 7. Validée → Service achat passe commande
+  DEVIS_DEMANDE             // 4. Agent client saisit marque + quantité souhaitées
+  DEVIS_EN_COURS            // 5. Agent commercial saisit marques dispo + prix HT
+  DEVIS_PROPOSE             // 6. Agent client choisit parmi les propositions
+  VALIDEE                   // 7. Choix validé → Service achat passe commande
   COMMANDEE_FOURNISSEUR     // 8. Commande passée fournisseur
   PNEUS_LIVRES              // 9. Pneus arrivés au point de montage
   MONTEE                    // 10. Montage effectué
-  REJETEE                   // Rejetée à n'importe quelle étape
+  REJETEE                   // Rejetée
   INSPECTION_TERMINEE       // (conservé pour compatibilité)
+  EN_ATTENTE_VALIDATION     // (conservé pour compatibilité)
 }
 
 model Entreprise {
@@ -93,16 +94,22 @@ model Commande {
   villeDepart     String
 
   // Inspection (rempli par agent commercial)
-  dateInspection        DateTime?
-  notesInspection       String?
-  inspectionValideeAgent Boolean  @default(false)  // Agent client a validé l'inspection
-  inspectionValideeN1    Boolean  @default(false)  // N+1 a validé l'inspection
+  dateInspection         DateTime?
+  notesInspection        String?
+  inspectionValideeAgent Boolean  @default(false)
+  inspectionValideeN1    Boolean  @default(false)
 
-  // Devis / Prix (rempli par agent commercial)
+  // Demande de l'agent client (marque + dimension + quantité souhaitées)
+  marqueDemandee    String?
+  dimensionDemandee String?
+  quantiteDemandee  Int?
+  notesDevis        String?    // Précisions du client
+
+  // Prix total (calculé sur le pneu choisi)
   prixTotal       Float?
   validePrix      Boolean        @default(false)
 
-  // Point de montage (choisi par agent commercial lors du devis)
+  // Point de montage (choisi par agent commercial)
   siteMontageId   String?
   siteMontage     SiteMontage?   @relation(fields: [siteMontageId], references: [id])
 
@@ -130,12 +137,13 @@ model Commande {
 model Pneu {
   id           String   @id @default(cuid())
   marque       String
-  reference    String?
+  reference    String?  // Référence produit
   dimension    String
   quantite     Int
-  prixUnitaire Float                   // Prix HT
+  prixUnitaire Float    // Prix HT unitaire
   disponible   Boolean  @default(true)
-  notes        String?
+  choisi       Boolean  @default(false)  // Pneu sélectionné par l'agent client
+  notes        String?  // Délai, remarques
   commandeId   String
   commande     Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
 }
