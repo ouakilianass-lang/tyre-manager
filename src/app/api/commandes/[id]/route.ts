@@ -166,14 +166,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: { choisi: true },
     });
 
+    // Statut reste DEVIS_PROPOSE — N+1 doit valider avant VALIDEE
+    updateData = {
+      prixTotal: pneuChoisi.prixUnitaire * pneuChoisi.quantite,
+    };
+    newStatut = "DEVIS_PROPOSE";
+    commentaire = `Choix agent : ${pneuChoisi.marque} ${pneuChoisi.dimension} — ${(pneuChoisi.prixUnitaire * pneuChoisi.quantite).toLocaleString("fr-FR")} MAD HT — en attente validation N+1`;
+  }
+
+  // ── 6b. N+1 : Valider le choix du devis (inspection) ─────────────────────
+  if (role === "N1_CLIENT" && body.action === "valider_choix_n1") {
+    if (commande.statut !== "DEVIS_PROPOSE")
+      return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
+    const pneuChoisi = await prisma.pneu.findFirst({ where: { commandeId: id, choisi: true } });
+    if (!pneuChoisi)
+      return NextResponse.json({ error: "Aucun pneu sélectionné par l'agent" }, { status: 400 });
     updateData = {
       statut: "VALIDEE",
-      prixTotal: pneuChoisi.prixUnitaire * pneuChoisi.quantite,
       validePrix: true,
       validateurId: session.user.id,
     };
     newStatut = "VALIDEE";
-    commentaire = `Choix confirmé : ${pneuChoisi.marque} ${pneuChoisi.dimension} — ${(pneuChoisi.prixUnitaire * pneuChoisi.quantite).toLocaleString("fr-FR")} MAD HT`;
+    commentaire = `Devis validé par N+1 : ${pneuChoisi.marque} ${pneuChoisi.dimension}`;
   }
 
   // ── 7. Service achat : Passer la commande ─────────────────────────────────

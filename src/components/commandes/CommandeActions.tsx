@@ -363,14 +363,33 @@ export default function CommandeActions({ commande, role, sites }: Props) {
   // ═══════════════════════════════════════════════════════════════════
   // ÉTAPE 6 — Agent client : Choisir parmi les propositions
   // ═══════════════════════════════════════════════════════════════════
-  if (role === "AGENT_CLIENT" && commande.statut === "DEVIS_PROPOSE") {
+  if (role === "AGENT_CLIENT" && commande.statut === "DEVIS_PROPOSE" && commande.typeCommande !== "DIRECTE") {
+    const pneuDejaChoisi = commande.pneus.find((p) => p.choisi);
+
+    // Si l'agent a déjà choisi → en attente validation N+1
+    if (pneuDejaChoisi) {
+      return (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader><CardTitle className="text-sm text-blue-800">En attente de validation N+1</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-blue-700">Votre choix a été transmis au responsable N+1 pour validation.</p>
+            <div className="bg-white rounded-lg p-3 border border-blue-200 text-sm">
+              <p className="font-semibold">{pneuDejaChoisi.marque} {pneuDejaChoisi.reference && `— ${pneuDejaChoisi.reference}`}</p>
+              <p className="text-gray-600">{pneuDejaChoisi.dimension} · {pneuDejaChoisi.quantite} pneu(s)</p>
+              <p className="font-bold mt-1">{(pneuDejaChoisi.prixUnitaire * pneuDejaChoisi.quantite).toLocaleString("fr-FR")} MAD HT</p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
     const propositions = commande.pneus.filter((p) => p.disponible);
     return (
       <Card className="border-amber-200 bg-amber-50">
         <CardHeader><CardTitle className="text-sm text-amber-800">Choisir une proposition</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-amber-700">
-            Sélectionnez la marque et le prix qui vous conviennent parmi les propositions ci-dessous.
+            Sélectionnez la marque et le prix qui vous conviennent. Votre choix sera validé par votre N+1.
           </p>
           <div className="space-y-2">
             {commande.pneus.map((p) => (
@@ -404,6 +423,38 @@ export default function CommandeActions({ commande, role, sites }: Props) {
               <p className="text-sm text-red-600 text-center py-4">Aucune proposition disponible. Contactez l&apos;agent commercial.</p>
             )}
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ÉTAPE 6b — N+1 : Valider le choix du devis (inspection)
+  // ═══════════════════════════════════════════════════════════════════
+  if (role === "N1_CLIENT" && commande.statut === "DEVIS_PROPOSE" && commande.typeCommande !== "DIRECTE") {
+    const pneuChoisi = commande.pneus.find((p) => p.choisi);
+    if (!pneuChoisi) {
+      return (
+        <Card className="border-gray-200 bg-gray-50">
+          <CardContent className="p-4">
+            <p className="text-sm text-gray-500 text-center">En attente du choix de l&apos;agent client.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <Card className="border-green-200 bg-green-50">
+        <CardHeader><CardTitle className="text-sm text-green-800">Valider le devis — N+1</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-green-700">L&apos;agent client a sélectionné la proposition suivante. Validez pour déclencher la commande fournisseur.</p>
+          <div className="bg-white rounded-lg p-3 border border-green-200 text-sm">
+            <p className="font-semibold">{pneuChoisi.marque} {pneuChoisi.reference && `— ${pneuChoisi.reference}`}</p>
+            <p className="text-gray-600">{pneuChoisi.dimension} · {pneuChoisi.quantite} pneu(s)</p>
+            <p className="text-lg font-bold mt-1">{(pneuChoisi.prixUnitaire * pneuChoisi.quantite).toLocaleString("fr-FR")} MAD HT</p>
+          </div>
+          <Button onClick={() => callApi("valider_choix_n1")} disabled={loading} className="w-full bg-green-600 hover:bg-green-700">
+            {loading ? "En cours..." : "✓ Valider et transmettre au service achat"}
+          </Button>
         </CardContent>
       </Card>
     );
