@@ -13,6 +13,8 @@ export const STATUT_LABELS: Record<StatutCommande, string> = {
   INSPECTION_EN_COURS:   "Inspection en cours",
   INSPECTION_ENVOYEE:    "Fiche inspection envoyée",
   DEVIS_DEMANDE:         "Besoins saisis",
+  COMMANDE_DIRECTE:      "Commande directe",
+  VALIDATION_N1:         "En attente validation N+1",
   DEVIS_EN_COURS:        "Devis en cours",
   DEVIS_PROPOSE:         "Devis proposé",
   VALIDEE:               "Validée",
@@ -29,6 +31,8 @@ export const STATUT_COLORS: Record<StatutCommande, string> = {
   INSPECTION_EN_COURS:   "bg-blue-100 text-blue-700",
   INSPECTION_ENVOYEE:    "bg-cyan-100 text-cyan-700",
   DEVIS_DEMANDE:         "bg-indigo-100 text-indigo-700",
+  COMMANDE_DIRECTE:      "bg-sky-100 text-sky-700",
+  VALIDATION_N1:         "bg-yellow-100 text-yellow-700",
   DEVIS_EN_COURS:        "bg-violet-100 text-violet-700",
   DEVIS_PROPOSE:         "bg-amber-100 text-amber-700",
   VALIDEE:               "bg-green-100 text-green-700",
@@ -44,4 +48,9 @@ export const TYPE_VEHICULE_LABELS = {
   CAMION:   "Camion",
   REMORQUE: "Remorque",
   TOURISME: "Véhicule de tourisme",
+};
+
+export const TYPE_COMMANDE_LABELS = {
+  INSPECTION: "Avec inspection",
+  DIRECTE:    "Commande directe",
 };

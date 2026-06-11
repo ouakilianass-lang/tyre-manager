@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { StatutCommande, Role } from "@prisma/client";
+import { StatutCommande, Role, TypeCommande } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ type Props = {
   commande: {
     id: string;
     statut: StatutCommande;
+    typeCommande: TypeCommande;
     pneus: Pneu[];
     siteMontageId: string | null;
     inspectionValideeAgent: boolean;
@@ -444,6 +445,108 @@ export default function CommandeActions({ commande, role, sites }: Props) {
           <Button onClick={() => callApi("livrer")} disabled={loading}>
             {loading ? "En cours..." : "🚚 Pneus livrés au point de montage"}
           </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FLUX DIRECT — N+1 : Valider ou rejeter la commande directe
+  // ═══════════════════════════════════════════════════════════════════
+  if (role === "N1_CLIENT" && commande.statut === "COMMANDE_DIRECTE") {
+    return (
+      <Card className="border-sky-200 bg-sky-50">
+        <CardHeader><CardTitle className="text-sm text-sky-800">Validation de la commande directe</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-sky-700">
+            Vérifiez les informations du véhicule et les besoins en pneus, puis validez ou rejetez.
+          </p>
+          {showRejectForm ? (
+            <div className="space-y-3">
+              <textarea
+                className="w-full border rounded-md px-3 py-2 text-sm"
+                rows={2}
+                placeholder="Motif du rejet..."
+                value={rejectComment}
+                onChange={(e) => setRejectComment(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowRejectForm(false)}>Annuler</Button>
+                <Button variant="destructive" size="sm" disabled={loading}
+                  onClick={() => callApi("rejeter_commande_directe", { commentaire: rejectComment })}>
+                  Confirmer le rejet
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <Button onClick={() => callApi("valider_commande_directe")} disabled={loading}>
+                {loading ? "En cours..." : "✓ Valider — demander le devis"}
+              </Button>
+              <Button variant="destructive" onClick={() => setShowRejectForm(true)} disabled={loading}>
+                ✗ Rejeter
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FLUX DIRECT — N+1 : Valider le devis et choisir le pneu
+  // ═══════════════════════════════════════════════════════════════════
+  if (role === "N1_CLIENT" && commande.statut === "DEVIS_PROPOSE" && commande.typeCommande === "DIRECTE") {
+    return (
+      <Card className="border-amber-200 bg-amber-50">
+        <CardHeader><CardTitle className="text-sm text-amber-800">Valider le devis</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-amber-700">
+            Choisissez la proposition qui convient parmi celles proposées par l&apos;agent commercial.
+          </p>
+          {showRejectForm ? (
+            <div className="space-y-3">
+              <textarea className="w-full border rounded-md px-3 py-2 text-sm" rows={2}
+                placeholder="Motif du rejet..." value={rejectComment}
+                onChange={(e) => setRejectComment(e.target.value)} />
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowRejectForm(false)}>Annuler</Button>
+                <Button variant="destructive" size="sm" disabled={loading}
+                  onClick={() => callApi("rejeter", { commentaire: rejectComment })}>
+                  Confirmer le rejet
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {commande.pneus.map((p) => (
+                <div key={p.id} className={`border rounded-lg p-4 bg-white ${!p.disponible ? "opacity-50" : ""}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">{p.marque} {p.reference && <span className="text-gray-500 font-normal text-sm">— {p.reference}</span>}</p>
+                      <p className="text-sm text-gray-600">{p.dimension} · {p.quantite} pneu(s)</p>
+                      {p.notes && <p className="text-xs text-gray-400 mt-0.5">{p.notes}</p>}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">{(p.prixUnitaire * p.quantite).toLocaleString("fr-FR")} MAD HT</p>
+                      <Badge className={p.disponible ? "bg-green-100 text-green-700 mt-1" : "bg-red-100 text-red-700 mt-1"}>
+                        {p.disponible ? "✓ Disponible" : "✗ Indisponible"}
+                      </Badge>
+                    </div>
+                  </div>
+                  {p.disponible && (
+                    <Button className="mt-3 w-full" disabled={loading}
+                      onClick={() => callApi("valider_devis_direct", { pneuId: p.id })}>
+                      {loading ? "En cours..." : `✓ Valider avec ${p.marque}`}
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button variant="destructive" className="w-full mt-2" onClick={() => setShowRejectForm(true)}>
+                ✗ Rejeter le devis
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

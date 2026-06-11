@@ -22,17 +22,27 @@ enum TypeVehicule {
   TOURISME
 }
 
+enum TypeCommande {
+  INSPECTION  // Avec inspection physique
+  DIRECTE     // Commande directe sans inspection
+}
+
 enum StatutCommande {
-  DEMANDE_INSPECTION        // 1. Agent client crée la demande
-  INSPECTION_EN_COURS       // 2. Agent commercial prend en charge
-  INSPECTION_ENVOYEE        // 3. Agent commercial envoie la fiche par mail
-  DEVIS_DEMANDE             // 4. Agent client saisit marque + quantité souhaitées
-  DEVIS_EN_COURS            // 5. Agent commercial saisit marques dispo + prix HT
-  DEVIS_PROPOSE             // 6. Agent client choisit parmi les propositions
-  VALIDEE                   // 7. Choix validé → Service achat passe commande
-  COMMANDEE_FOURNISSEUR     // 8. Commande passée fournisseur
-  PNEUS_LIVRES              // 9. Pneus arrivés au point de montage
-  MONTEE                    // 10. Montage effectué
+  // ── Flux inspection ──────────────────────────────────────────────
+  DEMANDE_INSPECTION        // Agent client crée la demande d'inspection
+  INSPECTION_EN_COURS       // Commercial prend en charge
+  INSPECTION_ENVOYEE        // Commercial envoie la fiche par mail
+  DEVIS_DEMANDE             // Agent client saisit ses besoins (après double validation)
+  // ── Flux commande directe ────────────────────────────────────────
+  COMMANDE_DIRECTE          // Agent client crée commande directe (véhicule + besoins)
+  VALIDATION_N1             // En attente validation N+1
+  // ── Flux commun (devis → montage) ────────────────────────────────
+  DEVIS_EN_COURS            // Commercial saisit marques dispo + prix HT
+  DEVIS_PROPOSE             // Agent client choisit (inspection) / N+1 valide devis (directe)
+  VALIDEE                   // Validée → Service achat passe commande
+  COMMANDEE_FOURNISSEUR     // Commande passée fournisseur
+  PNEUS_LIVRES              // Pneus arrivés au point de montage
+  MONTEE                    // Montage effectué
   REJETEE                   // Rejetée
   INSPECTION_TERMINEE       // (conservé pour compatibilité)
   EN_ATTENTE_VALIDATION     // (conservé pour compatibilité)
@@ -83,6 +93,7 @@ model SiteMontage {
 model Commande {
   id              String         @id @default(cuid())
   reference       String         @unique
+  typeCommande    TypeCommande   @default(INSPECTION)
   statut          StatutCommande @default(DEMANDE_INSPECTION)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

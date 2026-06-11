@@ -99,6 +99,42 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     commentaire = `Besoins saisis : ${quantiteDemandee}x ${marqueDemandee} ${dimensionDemandee}`;
   }
 
+  // ── FLUX DIRECT 1. N+1 : Valider la commande directe ─────────────────────
+  if (role === "N1_CLIENT" && body.action === "valider_commande_directe") {
+    if (commande.statut !== "COMMANDE_DIRECTE")
+      return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
+    updateData = { statut: "DEVIS_EN_COURS", validateurId: session.user.id };
+    newStatut = "DEVIS_EN_COURS";
+    commentaire = "Commande directe validée par le responsable — devis en attente";
+  }
+
+  // ── FLUX DIRECT 2. N+1 : Rejeter la commande directe ─────────────────────
+  if (role === "N1_CLIENT" && body.action === "rejeter_commande_directe") {
+    if (commande.statut !== "COMMANDE_DIRECTE")
+      return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
+    updateData = { statut: "REJETEE", validateurId: session.user.id };
+    newStatut = "REJETEE";
+    commentaire = body.commentaire || "Commande directe rejetée par le responsable";
+  }
+
+  // ── FLUX DIRECT 3. N+1 : Valider le devis (commande directe) ─────────────
+  if (role === "N1_CLIENT" && body.action === "valider_devis_direct") {
+    if (commande.statut !== "DEVIS_PROPOSE" || commande.typeCommande !== "DIRECTE")
+      return NextResponse.json({ error: "Action non disponible" }, { status: 400 });
+    // Le N+1 choisit le pneu dans le cas direct
+    const { pneuId } = body;
+    await prisma.pneu.updateMany({ where: { commandeId: id }, data: { choisi: false } });
+    const pneuChoisi = await prisma.pneu.update({ where: { id: pneuId }, data: { choisi: true } });
+    updateData = {
+      statut: "VALIDEE",
+      prixTotal: pneuChoisi.prixUnitaire * pneuChoisi.quantite,
+      validePrix: true,
+      validateurId: session.user.id,
+    };
+    newStatut = "VALIDEE";
+    commentaire = `Devis validé par le responsable : ${pneuChoisi.marque} — ${(pneuChoisi.prixUnitaire * pneuChoisi.quantite).toLocaleString("fr-FR")} MAD HT`;
+  }
+
   // ── 5. Commercial : Proposer les marques dispo + prix HT ──────────────────
   if (role === "AGENT_COMMERCIAL" && body.action === "proposer_devis") {
     if (commande.statut !== "DEVIS_EN_COURS")

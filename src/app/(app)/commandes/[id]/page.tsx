@@ -3,16 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { STATUT_LABELS, STATUT_COLORS, TYPE_VEHICULE_LABELS } from "@/lib/constants";
+import { STATUT_LABELS, STATUT_COLORS, TYPE_VEHICULE_LABELS, TYPE_COMMANDE_LABELS } from "@/lib/constants";
 import CommandeActions from "@/components/commandes/CommandeActions";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { StatutCommande } from "@prisma/client";
 
-const STEPS: { statut: StatutCommande; label: string }[] = [
+const STEPS_INSPECTION: { statut: StatutCommande; label: string }[] = [
   { statut: "DEMANDE_INSPECTION",    label: "Demande" },
   { statut: "INSPECTION_EN_COURS",   label: "Inspection" },
   { statut: "INSPECTION_ENVOYEE",    label: "Fiche envoyée" },
-  { statut: "DEVIS_DEMANDE",         label: "Besoins saisis" },
+  { statut: "DEVIS_DEMANDE",         label: "Besoins" },
   { statut: "DEVIS_EN_COURS",        label: "Devis en cours" },
   { statut: "DEVIS_PROPOSE",         label: "Choix client" },
   { statut: "VALIDEE",               label: "Validée" },
@@ -21,17 +21,25 @@ const STEPS: { statut: StatutCommande; label: string }[] = [
   { statut: "MONTEE",                label: "Montée" },
 ];
 
-const ORDER: StatutCommande[] = [
-  "DEMANDE_INSPECTION",
-  "INSPECTION_EN_COURS",
-  "INSPECTION_ENVOYEE",
-  "DEVIS_DEMANDE",
-  "DEVIS_EN_COURS",
-  "DEVIS_PROPOSE",
-  "VALIDEE",
-  "COMMANDEE_FOURNISSEUR",
-  "PNEUS_LIVRES",
-  "MONTEE",
+const STEPS_DIRECTE: { statut: StatutCommande; label: string }[] = [
+  { statut: "COMMANDE_DIRECTE",      label: "Commande" },
+  { statut: "DEVIS_EN_COURS",        label: "Devis en cours" },
+  { statut: "DEVIS_PROPOSE",         label: "Validation N+1" },
+  { statut: "VALIDEE",               label: "Validée" },
+  { statut: "COMMANDEE_FOURNISSEUR", label: "Commandée" },
+  { statut: "PNEUS_LIVRES",          label: "Livrée" },
+  { statut: "MONTEE",                label: "Montée" },
+];
+
+const ORDER_INSPECTION: StatutCommande[] = [
+  "DEMANDE_INSPECTION", "INSPECTION_EN_COURS", "INSPECTION_ENVOYEE",
+  "DEVIS_DEMANDE", "DEVIS_EN_COURS", "DEVIS_PROPOSE",
+  "VALIDEE", "COMMANDEE_FOURNISSEUR", "PNEUS_LIVRES", "MONTEE",
+];
+
+const ORDER_DIRECTE: StatutCommande[] = [
+  "COMMANDE_DIRECTE", "DEVIS_EN_COURS", "DEVIS_PROPOSE",
+  "VALIDEE", "COMMANDEE_FOURNISSEUR", "PNEUS_LIVRES", "MONTEE",
 ];
 
 export default async function CommandeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -59,6 +67,9 @@ export default async function CommandeDetailPage({ params }: { params: Promise<{
 
   if (!commande) notFound();
 
+  const isDirect = commande.typeCommande === "DIRECTE";
+  const STEPS = isDirect ? STEPS_DIRECTE : STEPS_INSPECTION;
+  const ORDER = isDirect ? ORDER_DIRECTE : ORDER_INSPECTION;
   const currentIndex = ORDER.indexOf(commande.statut);
 
   const sitesForForm =
@@ -72,7 +83,12 @@ export default async function CommandeDetailPage({ params }: { params: Promise<{
       {/* En-tête */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{commande.reference}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{commande.reference}</h1>
+            <Badge variant="outline" className={isDirect ? "border-sky-400 text-sky-700" : "border-gray-400 text-gray-600"}>
+              {isDirect ? "⚡ Directe" : "🔍 Inspection"}
+            </Badge>
+          </div>
           <p className="text-gray-500 mt-1">{commande.entreprise.nom}</p>
         </div>
         <Badge className={`text-sm px-3 py-1 ${STATUT_COLORS[commande.statut]}`}>
@@ -281,6 +297,7 @@ export default async function CommandeDetailPage({ params }: { params: Promise<{
           statut: commande.statut,
           pneus: commande.pneus,
           siteMontageId: commande.siteMontageId,
+          typeCommande: commande.typeCommande,
           inspectionValideeAgent: commande.inspectionValideeAgent,
           inspectionValideeN1: commande.inspectionValideeN1,
           marqueDemandee: commande.marqueDemandee,

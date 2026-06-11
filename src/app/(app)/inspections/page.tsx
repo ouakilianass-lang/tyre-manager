@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUT_LABELS, STATUT_COLORS, TYPE_VEHICULE_LABELS } from "@/lib/constants";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Zap } from "lucide-react";
 
 export default async function InspectionsPage() {
   const session = await auth();
@@ -37,12 +37,20 @@ export default async function InspectionsPage() {
           <p className="text-gray-500 mt-1">{commandes.length} commande(s)</p>
         </div>
         {role === "AGENT_CLIENT" && (
-          <Link href="/inspections/nouvelle">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvelle demande
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/commandes/directe">
+              <Button variant="outline">
+                <Zap className="w-4 h-4 mr-2 text-sky-500" />
+                Commande directe
+              </Button>
+            </Link>
+            <Link href="/inspections/nouvelle">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Demande d&apos;inspection
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 
@@ -73,6 +81,9 @@ export default async function InspectionsPage() {
                       <Badge variant="outline" className="text-xs">
                         {TYPE_VEHICULE_LABELS[cmd.typeVehicule]}
                       </Badge>
+                      {cmd.typeCommande === "DIRECTE" && (
+                        <Badge className="text-xs bg-sky-100 text-sky-700">⚡ Directe</Badge>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600">
                       {cmd.immatriculation} · Chauffeur: {cmd.numeroChauffeur}
