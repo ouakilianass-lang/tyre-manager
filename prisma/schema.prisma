@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  AGENT_CLIENT
+  N1_CLIENT
+  AGENT_COMMERCIAL
+  SERVICE_ACHAT
+}
+
+enum TypeVehicule {
+  CAMION
+  REMORQUE
+  TOURISME
+}
+
+enum StatutCommande {
+  DEMANDE_INSPECTION
+  INSPECTION_EN_COURS
+  INSPECTION_TERMINEE
+  EN_ATTENTE_VALIDATION
+  VALIDEE
+  COMMANDEE_FOURNISSEUR
+  PNEUS_LIVRES
+  MONTEE
+  REJETEE
+}
+
+model Entreprise {
+  id           String        @id @default(cuid())
+  nom          String
+  adresse      String?
+  telephone    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  utilisateurs Utilisateur[]
+  commandes    Commande[]
+}
+
+model Utilisateur {
+  id           String      @id @default(cuid())
+  nom          String
+  prenom       String
+  email        String      @unique
+  code         String
+  role         Role
+  actif        Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id])
+
+  commandesCreees     Commande[]   @relation("CommandeCreateur")
+  commandesValidees   Commande[]   @relation("CommandeValidateur")
+  commandesCommercial Commande[]   @relation("CommandeCommercial")
+  commandesAchat      Commande[]   @relation("CommandeAchat")
+  historiques         Historique[]
+}
+
+model SiteMontage {
+  id        String     @id @default(cuid())
+  nom       String
+  adresse   String
+  ville     String
+  telephone String?
+  actif     Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  commandes Commande[]
+}
+
+model Commande {
+  id              String         @id @default(cuid())
+  reference       String         @unique
+  statut          StatutCommande @default(DEMANDE_INSPECTION)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  typeVehicule    TypeVehicule
+  immatriculation String
+  numeroChauffeur String
+  villeDepart     String
+  dateInspection  DateTime?
+  notesInspection String?
+  prixTotal       Float?
+  validePrix      Boolean        @default(false)
+  siteMontageId   String?
+  siteMontage     SiteMontage?   @relation(fields: [siteMontageId], references: [id])
+  dateLivraison   DateTime?
+  dateMontage     DateTime?
+  notesMontage    String?
+  entrepriseId    String
+  entreprise      Entreprise     @relation(fields: [entrepriseId], references: [id])
+  createurId      String
+  createur        Utilisateur    @relation("CommandeCreateur", fields: [createurId], references: [id])
+  validateurId    String?
+  validateur      Utilisateur?   @relation("CommandeValidateur", fields: [validateurId], references: [id])
+  agentCommercialId String?
+  agentCommercial   Utilisateur? @relation("CommandeCommercial", fields: [agentCommercialId], references: [id])
+  serviceAchatId  String?
+  serviceAchat    Utilisateur?   @relation("CommandeAchat", fields: [serviceAchatId], references: [id])
+  pneus           Pneu[]
+  historiques     Historique[]
+}
+
+model Pneu {
+  id           String   @id @default(cuid())
+  marque       String
+  reference    String?
+  dimension    String
+  quantite     Int
+  prixUnitaire Float
+  disponible   Boolean  @default(true)
+  notes        String?
+  commandeId   String
+  commande     Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+}
+
+model Historique {
+  id            String         @id @default(cuid())
+  statut        StatutCommande
+  commentaire   String?
+  createdAt     DateTime       @default(now())
+  commandeId    String
+  commande      Commande       @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  utilisateurId String?
+  utilisateur   Utilisateur?   @relation(fields: [utilisateurId], references: [id])
+}
