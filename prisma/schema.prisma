@@ -23,15 +23,18 @@ enum TypeVehicule {
 }
 
 enum StatutCommande {
-  DEMANDE_INSPECTION
-  INSPECTION_EN_COURS
-  INSPECTION_TERMINEE
-  EN_ATTENTE_VALIDATION
-  VALIDEE
-  COMMANDEE_FOURNISSEUR
-  PNEUS_LIVRES
-  MONTEE
-  REJETEE
+  DEMANDE_INSPECTION        // 1. Agent client crée la demande
+  INSPECTION_EN_COURS       // 2. Agent commercial prend en charge
+  INSPECTION_ENVOYEE        // 3. Agent commercial envoie la fiche par mail
+  DEVIS_DEMANDE             // 4. Agent client + N+1 ont validé → agent client demande les prix
+  DEVIS_PROPOSE             // 5. Agent commercial propose marques dispo + prix HT
+  EN_ATTENTE_VALIDATION     // 6. N+1 valide le prix
+  VALIDEE                   // 7. Validée → Service achat passe commande
+  COMMANDEE_FOURNISSEUR     // 8. Commande passée fournisseur
+  PNEUS_LIVRES              // 9. Pneus arrivés au point de montage
+  MONTEE                    // 10. Montage effectué
+  REJETEE                   // Rejetée à n'importe quelle étape
+  INSPECTION_TERMINEE       // (conservé pour compatibilité)
 }
 
 model Entreprise {
@@ -82,19 +85,33 @@ model Commande {
   statut          StatutCommande @default(DEMANDE_INSPECTION)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  // Véhicule
   typeVehicule    TypeVehicule
   immatriculation String
   numeroChauffeur String
   villeDepart     String
-  dateInspection  DateTime?
-  notesInspection String?
+
+  // Inspection (rempli par agent commercial)
+  dateInspection        DateTime?
+  notesInspection       String?
+  inspectionValideeAgent Boolean  @default(false)  // Agent client a validé l'inspection
+  inspectionValideeN1    Boolean  @default(false)  // N+1 a validé l'inspection
+
+  // Devis / Prix (rempli par agent commercial)
   prixTotal       Float?
   validePrix      Boolean        @default(false)
+
+  // Point de montage (choisi par agent commercial lors du devis)
   siteMontageId   String?
   siteMontage     SiteMontage?   @relation(fields: [siteMontageId], references: [id])
+
+  // Suivi livraison/montage
   dateLivraison   DateTime?
   dateMontage     DateTime?
   notesMontage    String?
+
+  // Relations
   entrepriseId    String
   entreprise      Entreprise     @relation(fields: [entrepriseId], references: [id])
   createurId      String
@@ -105,6 +122,7 @@ model Commande {
   agentCommercial   Utilisateur? @relation("CommandeCommercial", fields: [agentCommercialId], references: [id])
   serviceAchatId  String?
   serviceAchat    Utilisateur?   @relation("CommandeAchat", fields: [serviceAchatId], references: [id])
+
   pneus           Pneu[]
   historiques     Historique[]
 }
@@ -115,7 +133,7 @@ model Pneu {
   reference    String?
   dimension    String
   quantite     Int
-  prixUnitaire Float
+  prixUnitaire Float                   // Prix HT
   disponible   Boolean  @default(true)
   notes        String?
   commandeId   String
