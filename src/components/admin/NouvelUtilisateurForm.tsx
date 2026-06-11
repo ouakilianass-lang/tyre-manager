@@ -74,11 +74,9 @@ export default function NouvelUtilisateurForm({ entreprises }: { entreprises: En
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvel utilisateur
-        </Button>
+      <DialogTrigger render={<Button />}>
+        <Plus className="w-4 h-4 mr-2" />
+        Nouvel utilisateur
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

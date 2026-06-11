@@ -30,8 +30,8 @@ export default function NouveauSiteForm() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button><Plus className="w-4 h-4 mr-2" />Nouveau site</Button>
+      <DialogTrigger render={<Button />}>
+        <Plus className="w-4 h-4 mr-2" />Nouveau site
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Créer un site de montage</DialogTitle></DialogHeader>

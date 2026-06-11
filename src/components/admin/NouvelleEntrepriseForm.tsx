@@ -30,8 +30,8 @@ export default function NouvelleEntrepriseForm() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button><Plus className="w-4 h-4 mr-2" />Nouvelle entreprise</Button>
+      <DialogTrigger render={<Button />}>
+        <Plus className="w-4 h-4 mr-2" />Nouvelle entreprise
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Créer une entreprise</DialogTitle></DialogHeader>
