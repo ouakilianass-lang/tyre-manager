@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { STATUT_LABELS, STATUT_COLORS, TYPE_VEHICULE_LABELS } from "@/lib/constants";
 import Link from "next/link";
-import { Truck, Search, Calendar, Package, CheckCircle2 } from "lucide-react";
+import { Truck, Search, Calendar, Package, CheckCircle2, Download, Gauge } from "lucide-react";
 import VehiculeSearch from "@/components/vehicules/VehiculeSearch";
 
 type Props = { searchParams: Promise<{ q?: string }> };
@@ -76,8 +76,28 @@ export default async function VehiculesPage({ searchParams }: Props) {
         </p>
       </div>
 
-      {/* Recherche */}
-      <VehiculeSearch defaultValue={q || ""} />
+      {/* Recherche + export */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <VehiculeSearch defaultValue={q || ""} />
+        {selected && (
+          <a
+            href={`/api/export/vehicules?immat=${selected}`}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exporter Excel
+          </a>
+        )}
+        {!selected && (
+          <a
+            href="/api/export/vehicules"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exporter tous
+          </a>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -141,7 +161,7 @@ export default async function VehiculesPage({ searchParams }: Props) {
                         {commandes[0]?.entreprise && ` · ${commandes[0].entreprise.nom}`}
                       </p>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-4 gap-4 text-center">
                       <div>
                         <p className="text-2xl font-bold">{commandes.length}</p>
                         <p className="text-xs text-gray-400">interventions</p>
@@ -153,6 +173,12 @@ export default async function VehiculesPage({ searchParams }: Props) {
                       <div>
                         <p className="text-2xl font-bold">{totalDepense > 0 ? `${(totalDepense / 1000).toFixed(0)}k` : "—"}</p>
                         <p className="text-xs text-gray-400">MAD HT</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">
+                          {commandes[0]?.kilometrage ? `${commandes[0].kilometrage.toLocaleString("fr-FR")}` : "—"}
+                        </p>
+                        <p className="text-xs text-gray-400">km (dernier)</p>
                       </div>
                     </div>
                   </div>
@@ -200,6 +226,12 @@ export default async function VehiculesPage({ searchParams }: Props) {
                           <p className="text-xs text-gray-400">Ville</p>
                           <p className="font-medium">{cmd.villeDepart}</p>
                         </div>
+                        {cmd.kilometrage && (
+                          <div>
+                            <p className="text-xs text-gray-400 flex items-center gap-1"><Gauge className="w-3 h-3" /> Kilométrage</p>
+                            <p className="font-medium">{cmd.kilometrage.toLocaleString("fr-FR")} km</p>
+                          </div>
+                        )}
                         {cmd.agentCommercial && (
                           <div>
                             <p className="text-xs text-gray-400">Agent commercial</p>

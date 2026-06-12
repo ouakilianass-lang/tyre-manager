@@ -23,6 +23,7 @@ export default function NouvelleInspectionPage() {
     immatriculation: "",
     numeroChauffeur: "",
     villeDepart: "",
+    kilometrage: "",
   });
 
   function handleChange(field: string, value: string) {
@@ -106,6 +107,17 @@ export default function NouvelleInspectionPage() {
                 value={form.villeDepart}
                 onChange={(e) => handleChange("villeDepart", e.target.value)}
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="kilometrage">Kilométrage</Label>
+              <Input
+                id="kilometrage"
+                type="number"
+                placeholder="Ex: 125000"
+                value={form.kilometrage}
+                onChange={(e) => handleChange("kilometrage", e.target.value)}
               />
             </div>
 

@@ -103,6 +103,7 @@ model Commande {
   immatriculation String
   numeroChauffeur String
   villeDepart     String
+  kilometrage     Int?
 
   // Inspection (rempli par agent commercial)
   dateInspection         DateTime?

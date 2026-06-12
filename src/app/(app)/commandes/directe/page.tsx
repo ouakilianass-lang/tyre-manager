@@ -24,6 +24,7 @@ export default function CommandeDirectePage() {
     immatriculation: "",
     numeroChauffeur: "",
     villeDepart: "",
+    kilometrage: "",
     marqueDemandee: "",
     dimensionDemandee: "",
     quantiteDemandee: "1",
@@ -118,6 +119,17 @@ export default function CommandeDirectePage() {
                   value={form.villeDepart}
                   onChange={(e) => set("villeDepart", e.target.value)}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="kilometrage">Kilométrage</Label>
+                <Input
+                  id="kilometrage"
+                  type="number"
+                  placeholder="Ex: 125000"
+                  value={form.kilometrage}
+                  onChange={(e) => set("kilometrage", e.target.value)}
                 />
               </div>
             </div>

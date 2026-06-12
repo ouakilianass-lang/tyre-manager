@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const {
-    typeVehicule, immatriculation, numeroChauffeur, villeDepart,
+    typeVehicule, immatriculation, numeroChauffeur, villeDepart, kilometrage,
     marqueDemandee, dimensionDemandee, quantiteDemandee, notesDevis,
   } = body;
 
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
       immatriculation: immatriculation.toUpperCase(),
       numeroChauffeur,
       villeDepart,
+      kilometrage: kilometrage ? parseInt(kilometrage) : null,
       marqueDemandee,
       dimensionDemandee,
       quantiteDemandee: parseInt(quantiteDemandee) || 1,

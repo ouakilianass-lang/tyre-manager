@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { typeVehicule, immatriculation, numeroChauffeur, villeDepart } = body;
+  const { typeVehicule, immatriculation, numeroChauffeur, villeDepart, kilometrage } = body;
 
   if (!typeVehicule || !immatriculation || !numeroChauffeur || !villeDepart) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
       immatriculation: immatriculation.toUpperCase(),
       numeroChauffeur,
       villeDepart,
+      kilometrage: kilometrage ? parseInt(kilometrage) : null,
       entrepriseId: session.user.entrepriseId!,
       createurId: session.user.id,
       statut: "DEMANDE_INSPECTION",
