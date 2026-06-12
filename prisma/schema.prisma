@@ -57,6 +57,21 @@ model Entreprise {
   updatedAt    DateTime      @updatedAt
   utilisateurs Utilisateur[]
   commandes    Commande[]
+  vehicules    Vehicule[]
+}
+
+model Vehicule {
+  id              String       @id @default(cuid())
+  immatriculation String
+  typeVehicule    TypeVehicule
+  kilometrage     Int?
+  notes           String?
+  entrepriseId    String
+  entreprise      Entreprise   @relation(fields: [entrepriseId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([immatriculation, entrepriseId])
 }
 
 model Utilisateur {

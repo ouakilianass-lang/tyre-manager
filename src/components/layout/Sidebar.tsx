@@ -50,6 +50,12 @@ const navItems: NavItem[] = [
     roles: ["AGENT_CLIENT", "N1_CLIENT", "AGENT_COMMERCIAL", "SERVICE_ACHAT", "SUPER_ADMIN"],
   },
   {
+    href: "/admin/vehicules",
+    label: "Véhicules (admin)",
+    icon: Truck,
+    roles: ["SUPER_ADMIN"],
+  },
+  {
     href: "/admin/utilisateurs",
     label: "Utilisateurs",
     icon: Users,
