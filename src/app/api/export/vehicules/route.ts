@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -29,47 +29,66 @@ export async function GET(req: Request) {
     },
   });
 
-  // Build rows
-  const rows = commandes.map((cmd) => {
-    const pneu = cmd.pneus[0];
-    return {
-      "Référence": cmd.reference,
-      "Immatriculation": cmd.immatriculation,
-      "Type véhicule": cmd.typeVehicule,
-      "Kilométrage": cmd.kilometrage ?? "",
-      "Chauffeur": cmd.numeroChauffeur,
-      "Ville": cmd.villeDepart,
-      "Client": cmd.entreprise.nom,
-      "Type commande": cmd.typeCommande,
-      "Statut": cmd.statut,
-      "Date création": new Date(cmd.createdAt).toLocaleDateString("fr-FR"),
-      "Date montage": cmd.dateMontage ? new Date(cmd.dateMontage).toLocaleDateString("fr-FR") : "",
-      "Site montage": cmd.siteMontage ? `${cmd.siteMontage.nom} — ${cmd.siteMontage.ville}` : "",
-      "Marque pneu": pneu?.marque ?? "",
-      "Dimension": pneu?.dimension ?? "",
-      "Référence pneu": pneu?.reference ?? "",
-      "Quantité": pneu?.quantite ?? "",
-      "Prix unitaire (MAD)": pneu?.prixUnitaire ?? "",
-      "Montant total HT (MAD)": cmd.prixTotal ?? "",
-    };
-  });
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Véhicules");
 
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Véhicules");
-
-  // Column widths
-  ws["!cols"] = [
-    { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 18 },
-    { wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 22 }, { wch: 14 },
-    { wch: 14 }, { wch: 28 }, { wch: 14 }, { wch: 12 }, { wch: 16 },
-    { wch: 10 }, { wch: 20 }, { wch: 20 },
+  ws.columns = [
+    { header: "Référence",           key: "reference",      width: 18 },
+    { header: "Immatriculation",     key: "immat",          width: 14 },
+    { header: "Type véhicule",       key: "typeVehicule",   width: 14 },
+    { header: "Kilométrage",         key: "kilometrage",    width: 12 },
+    { header: "Chauffeur",           key: "chauffeur",      width: 20 },
+    { header: "Ville",               key: "ville",          width: 14 },
+    { header: "Client",              key: "client",         width: 22 },
+    { header: "Type commande",       key: "typeCommande",   width: 14 },
+    { header: "Statut",              key: "statut",         width: 22 },
+    { header: "Date création",       key: "dateCreation",   width: 14 },
+    { header: "Date montage",        key: "dateMontage",    width: 14 },
+    { header: "Site montage",        key: "siteMontage",    width: 28 },
+    { header: "Marque pneu",         key: "marque",         width: 14 },
+    { header: "Dimension",           key: "dimension",      width: 12 },
+    { header: "Référence pneu",      key: "refPneu",        width: 16 },
+    { header: "Quantité",            key: "quantite",       width: 10 },
+    { header: "Prix unitaire (MAD)", key: "prixUnit",       width: 20 },
+    { header: "Montant total HT (MAD)", key: "prixTotal",   width: 22 },
   ];
 
-  const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  // Style header row
+  ws.getRow(1).eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F2937" } };
+    cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  });
+  ws.getRow(1).height = 22;
+
+  commandes.forEach((cmd) => {
+    const pneu = cmd.pneus[0];
+    ws.addRow({
+      reference:    cmd.reference,
+      immat:        cmd.immatriculation,
+      typeVehicule: cmd.typeVehicule,
+      kilometrage:  cmd.kilometrage ?? "",
+      chauffeur:    cmd.numeroChauffeur,
+      ville:        cmd.villeDepart,
+      client:       cmd.entreprise.nom,
+      typeCommande: cmd.typeCommande,
+      statut:       cmd.statut,
+      dateCreation: new Date(cmd.createdAt).toLocaleDateString("fr-FR"),
+      dateMontage:  cmd.dateMontage ? new Date(cmd.dateMontage).toLocaleDateString("fr-FR") : "",
+      siteMontage:  cmd.siteMontage ? `${cmd.siteMontage.nom} — ${cmd.siteMontage.ville}` : "",
+      marque:       pneu?.marque ?? "",
+      dimension:    pneu?.dimension ?? "",
+      refPneu:      pneu?.reference ?? "",
+      quantite:     pneu?.quantite ?? "",
+      prixUnit:     pneu?.prixUnitaire ?? "",
+      prixTotal:    cmd.prixTotal ?? "",
+    });
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
   const filename = immat ? `vehicule_${immat}.xlsx` : "vehicules_export.xlsx";
 
-  return new NextResponse(buf, {
+  return new NextResponse(buf as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${filename}"`,
