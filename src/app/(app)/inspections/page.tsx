@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUT_LABELS, STATUT_COLORS, TYPE_VEHICULE_LABELS } from "@/lib/constants";
 import Link from "next/link";
 import { Plus, Zap } from "lucide-react";
+import DeleteCommandeButton from "@/components/commandes/DeleteCommandeButton";
 
 export default async function InspectionsPage() {
   const session = await auth();
@@ -70,33 +71,36 @@ export default async function InspectionsPage() {
           ) : (
             <div className="divide-y">
               {commandes.map((cmd) => (
-                <Link
-                  key={cmd.id}
-                  href={`/commandes/${cmd.id}`}
-                  className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-sm">{cmd.reference}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {TYPE_VEHICULE_LABELS[cmd.typeVehicule]}
-                      </Badge>
-                      {cmd.typeCommande === "DIRECTE" && (
-                        <Badge className="text-xs bg-sky-100 text-sky-700">⚡ Directe</Badge>
-                      )}
+                <div key={cmd.id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <Link href={`/commandes/${cmd.id}`} className="flex-1 min-w-0">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-sm">{cmd.reference}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {TYPE_VEHICULE_LABELS[cmd.typeVehicule]}
+                        </Badge>
+                        {cmd.typeCommande === "DIRECTE" && (
+                          <Badge className="text-xs bg-sky-100 text-sky-700">⚡ Directe</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {cmd.immatriculation} · Chauffeur: {cmd.numeroChauffeur}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {cmd.entreprise.nom} · {cmd.villeDepart} ·{" "}
+                        {new Date(cmd.createdAt).toLocaleDateString("fr-FR")}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {cmd.immatriculation} · Chauffeur: {cmd.numeroChauffeur}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {cmd.entreprise.nom} · {cmd.villeDepart} ·{" "}
-                      {new Date(cmd.createdAt).toLocaleDateString("fr-FR")}
-                    </p>
+                  </Link>
+                  <div className="flex items-center gap-3 shrink-0 ml-4">
+                    <Badge className={STATUT_COLORS[cmd.statut]}>
+                      {STATUT_LABELS[cmd.statut]}
+                    </Badge>
+                    {role === "SUPER_ADMIN" && (
+                      <DeleteCommandeButton id={cmd.id} reference={cmd.reference} />
+                    )}
                   </div>
-                  <Badge className={STATUT_COLORS[cmd.statut]}>
-                    {STATUT_LABELS[cmd.statut]}
-                  </Badge>
-                </Link>
+                </div>
               ))}
             </div>
           )}

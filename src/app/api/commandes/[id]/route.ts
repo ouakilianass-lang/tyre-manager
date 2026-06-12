@@ -233,3 +233,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json(updated);
 }
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session || session.user.role !== "SUPER_ADMIN")
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  const { id } = await params;
+  await prisma.commande.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}

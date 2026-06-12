@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUT_LABELS, STATUT_COLORS, TYPE_VEHICULE_LABELS, TYPE_COMMANDE_LABELS } from "@/lib/constants";
 import CommandeActions from "@/components/commandes/CommandeActions";
+import DeleteCommandeButton from "@/components/commandes/DeleteCommandeButton";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { StatutCommande } from "@prisma/client";
 
@@ -91,9 +92,14 @@ export default async function CommandeDetailPage({ params }: { params: Promise<{
           </div>
           <p className="text-gray-500 mt-1">{commande.entreprise.nom}</p>
         </div>
-        <Badge className={`text-sm px-3 py-1 ${STATUT_COLORS[commande.statut]}`}>
-          {STATUT_LABELS[commande.statut]}
-        </Badge>
+        <div className="flex items-center gap-3">
+          {session.user.role === "SUPER_ADMIN" && (
+            <DeleteCommandeButton id={commande.id} reference={commande.reference} redirectTo="/inspections" />
+          )}
+          <Badge className={`text-sm px-3 py-1 ${STATUT_COLORS[commande.statut]}`}>
+            {STATUT_LABELS[commande.statut]}
+          </Badge>
+        </div>
       </div>
 
       {/* Timeline */}
